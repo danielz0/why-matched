@@ -1,0 +1,59 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>why-matched report</title>
+<style>
+:root { color-scheme: light dark; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+       max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5;
+       background: #ffffff; color: #111827; }
+@media (prefers-color-scheme: dark) {
+  body { background: #0f1115; color: #e5e7eb; }
+  .chunk { background: #171a21 !important; border-color: #2a2e37 !important; }
+  .flag { background: #3a2a1a !important; border-color: #7a5a2a !important; }
+  svg { background: #1a1d24 !important; }
+}
+h1 { font-size: 1.3rem; }
+h2 { font-size: 1.05rem; margin-bottom: 0.25rem; }
+.meta { color: #6b7280; font-size: 0.85rem; margin-bottom: 1.5rem; }
+.chunk { border: 1px solid #e5e7eb; border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; background: #fafafa; }
+.score { font-weight: 600; }
+.tok { display: inline-block; padding: 0.08rem 0.15rem; border-radius: 4px; margin: 0.03rem; }
+.flag { background: #fff7ed; border: 1px solid #fdba74; border-radius: 8px; padding: 0.5rem 0.75rem; margin: 0.4rem 0; font-size: 0.88rem; }
+.flag-kind { font-weight: 600; }
+.section-label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: #6b7280; margin: 0.6rem 0 0.2rem; }
+.legend { font-size: 0.8rem; color: #6b7280; margin: 0.3rem 0 1rem; }
+</style>
+</head>
+<body>
+<h1>why-matched</h1>
+<div class="meta">model: <code>sentence-transformers/all-MiniLM-L6-v2</code> &middot; attribution method: <code>integrated_gradients</code></div>
+<div class="section-label">Query</div>
+<p>Is remote work allowed for contractors?</p>
+
+<div class="section-label">Query vs. chunks (reduced-space projection)</div>
+<div class="legend">blue = query &middot; green = chunk (hover for text)</div>
+<svg viewBox="0 0 640 420" width="100%" height="420" xmlns="http://www.w3.org/2000/svg" style="border-radius:8px;"><circle cx="30.0" cy="390.0" r="8" fill="#2563eb" fill-opacity="0.85" stroke="#00000022"><title>Is remote work allowed for contractors?</title></circle><circle cx="57.8" cy="30.0" r="8" fill="#16a34a" fill-opacity="0.85" stroke="#00000022"><title>Remote work is not allowed for contractors under this policy</title></circle><circle cx="610.0" cy="223.3" r="8" fill="#16a34a" fill-opacity="0.85" stroke="#00000022"><title>Employees may take unlimited vacation days.</title></circle></svg>
+
+
+<div class="chunk">
+  <h2>#1 &middot; <span class="score">0.860</span></h2>
+  <div class="section-label">Chunk (highlighted by integrated_gradients attribution)</div>
+  <div><span class="tok" style="background:rgba(34,139,87,0.65)" title="remote: +0.126">remote</span> <span class="tok" style="background:rgba(34,139,87,0.70)" title="work: +0.138">work</span> <span class="tok" style="background:rgba(34,139,87,0.38)" title="is: +0.062">is</span> <span class="tok" style="background:rgba(34,139,87,0.39)" title="not: +0.064">not</span> <span class="tok" style="background:rgba(34,139,87,0.51)" title="allowed: +0.092">allowed</span> <span class="tok" style="background:rgba(34,139,87,0.34)" title="for: +0.051">for</span> <span class="tok" style="background:rgba(34,139,87,0.80)" title="contractors: +0.162">contractors</span> <span class="tok" style="background:rgba(34,139,87,0.31)" title="under: +0.046">under</span> <span class="tok" style="background:rgba(34,139,87,0.39)" title="this: +0.064">this</span> <span class="tok" style="background:rgba(34,139,87,0.40)" title="policy: +0.066">policy</span> <span class="tok" style="background:rgba(200,60,60,0.26)" title=".: -0.034">.</span></div>
+  <div class="section-label">Query tokens, attributed against this chunk</div>
+  <div><span class="tok" style="background:rgba(34,139,87,0.43)" title="is: +0.093">is</span> <span class="tok" style="background:rgba(34,139,87,0.71)" title="remote: +0.176">remote</span> <span class="tok" style="background:rgba(34,139,87,0.55)" title="work: +0.128">work</span> <span class="tok" style="background:rgba(34,139,87,0.54)" title="allowed: +0.125">allowed</span> <span class="tok" style="background:rgba(34,139,87,0.31)" title="for: +0.058">for</span> <span class="tok" style="background:rgba(34,139,87,0.80)" title="contractors: +0.203">contractors</span> <span class="tok" style="background:rgba(34,139,87,0.26)" title="?: +0.042">?</span></div>
+  <div class="flag"><span class="flag-kind">negation_collapse</span> (chunk) trigger=<code>not</code> — score 0.860 → 0.925 (7.5% relative change)<br><span style="opacity:0.8">counterfactual: "Remote work is allowed for contractors under this policy."</span></div><div class="flag"><span class="flag-kind">antonym_collapse</span> (query) trigger=<code>allowed -&gt; prohibited</code> — score 0.860 → 0.891 (3.6% relative change)<br><span style="opacity:0.8">counterfactual: "Is remote work prohibited for contractors?"</span></div><div class="flag"><span class="flag-kind">antonym_collapse</span> (chunk) trigger=<code>allowed -&gt; prohibited</code> — score 0.860 → 0.836 (2.8% relative change)<br><span style="opacity:0.8">counterfactual: "Remote work is not prohibited for contractors under this policy."</span></div>
+</div>
+
+<div class="chunk">
+  <h2>#2 &middot; <span class="score">0.237</span></h2>
+  <div class="section-label">Chunk (highlighted by integrated_gradients attribution)</div>
+  <div><span class="tok" style="background:rgba(34,139,87,0.80)" title="employees: +0.092">employees</span> <span class="tok" style="background:rgba(34,139,87,0.25)" title="may: +0.018">may</span> <span class="tok" style="background:rgba(34,139,87,0.30)" title="take: +0.025">take</span> <span class="tok" style="background:rgba(34,139,87,0.40)" title="unlimited: +0.038">unlimited</span> <span class="tok" style="background:rgba(34,139,87,0.49)" title="vacation: +0.051">vacation</span> <span class="tok" style="background:rgba(34,139,87,0.34)" title="days: +0.030">days</span> <span class="tok" style="background:rgba(200,60,60,0.18)" title=".: -0.008">.</span></div>
+  <div class="section-label">Query tokens, attributed against this chunk</div>
+  <div><span class="tok" style="background:rgba(34,139,87,0.34)" title="is: +0.020">is</span> <span class="tok" style="background:rgba(34,139,87,0.49)" title="remote: +0.033">remote</span> <span class="tok" style="background:rgba(34,139,87,0.57)" title="work: +0.041">work</span> <span class="tok" style="background:rgba(34,139,87,0.58)" title="allowed: +0.041">allowed</span> <span class="tok" style="background:rgba(34,139,87,0.25)" title="for: +0.011">for</span> <span class="tok" style="background:rgba(34,139,87,0.80)" title="contractors: +0.061">contractors</span> <span class="tok" style="background:rgba(34,139,87,0.24)" title="?: +0.011">?</span></div>
+  <div class="flag"><span class="flag-kind">antonym_collapse</span> (query) trigger=<code>allowed -&gt; prohibited</code> — score 0.237 → 0.253 (6.5% relative change)<br><span style="opacity:0.8">counterfactual: "Is remote work prohibited for contractors?"</span></div><div class="flag"><span class="flag-kind">antonym_collapse</span> (chunk) trigger=<code>may -&gt; must</code> — score 0.237 → 0.245 (3.2% relative change)<br><span style="opacity:0.8">counterfactual: "Employees must take unlimited vacation days."</span></div>
+</div>
+
+</body>
+</html>
