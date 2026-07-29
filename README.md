@@ -1,6 +1,5 @@
 # WhyMatched
 
-[![PyPI](https://img.shields.io/pypi/v/whymatched?color=7B61FF)](https://test.pypi.org/project/whymatched/)
 [![License: MIT](https://img.shields.io/github/license/danielz0/why-matched?color=FF5CC8)](https://github.com/danielz0/why-matched/blob/main/LICENSE)
 [![Coverage](coverage.svg)](https://github.com/danielz0/why-matched/actions/workflows/ci.yml)
 [![GitHub Stars](https://img.shields.io/github/stars/danielz0/why-matched?style=social)](https://github.com/danielz0/why-matched)
