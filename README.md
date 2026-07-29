@@ -5,7 +5,6 @@
 [![GitHub Stars](https://img.shields.io/github/stars/danielz0/why-matched?style=social)](https://github.com/danielz0/why-matched)
 [![GitHub Sponsors](https://img.shields.io/github/sponsors/danielz0?color=FF5CC8)](https://github.com/sponsors/danielz0)
 [![PyPI](https://img.shields.io/pypi/v/whymatched?color=7B61FF)](https://pypi.org/project/whymatched/)
-[![Python Versions](https://img.shields.io/pypi/pyversions/whymatched?color=4FC3F7)](https://pypi.org/project/whymatched/)
 
 
 **Why did this chunk match?** 
