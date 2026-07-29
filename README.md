@@ -1,6 +1,6 @@
 # whymatched
 
-[![CI]((https://github.com/github/docs/actions/workflows/main.yml/badge.svg))](https://github.com/danielz0/why-matched/actions/workflows/ci.yml)
+[![CI]((https://github.com/github/docs/actions/workflows/main.yml/badge.svg))](https://github.com/danielz0/why-matched/.github/workflows/ci.yml)
 [![coverage](coverage.svg)](https://github.com/danielz0/why-matched/actions/workflows/ci.yml)
 [![PyPI version](https://img.shields.io/pypi/v/whymatched.svg)](https://pypi.org/project/whymatched/)
 [![Python versions](https://img.shields.io/pypi/pyversions/whymatched.svg)](https://pypi.org/project/whymatched/)
