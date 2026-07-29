@@ -1,10 +1,12 @@
-# whymatched
+# WhyMatched
 
-[![CI]((https://github.com/github/docs/actions/workflows/main.yml/badge.svg))](https://github.com/danielz0/why-matched/.github/workflows/ci.yml)
-[![coverage](coverage.svg)](https://github.com/danielz0/why-matched/actions/workflows/ci.yml)
-[![PyPI version](https://img.shields.io/pypi/v/whymatched.svg)](https://pypi.org/project/whymatched/)
-[![Python versions](https://img.shields.io/pypi/pyversions/whymatched.svg)](https://pypi.org/project/whymatched/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/whymatched?color=7B61FF)](https://pypi.org/project/whymatched/)
+[![Python Versions](https://img.shields.io/pypi/pyversions/whymatched?color=4FC3F7)](https://test.pypi.org/project/whymatched/)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/whymatched?color=5CE1B6)](https://test.pypi.org/project/whymatched/)
+[![License: MIT](https://img.shields.io/github/license/danielz0/why-matched?color=FF5CC8)](https://github.com/danielz0/why-matched/blob/main/LICENSE)
+[![Coverage](coverage.svg)](https://github.com/danielz0/why-matched/actions/workflows/ci.yml)
+[![GitHub Stars](https://img.shields.io/github/stars/danielz0/why-matched?style=social)](https://github.com/danielz0/why-matched)
+[![GitHub Sponsors](https://img.shields.io/github/sponsors/danielz0?color=FF5CC8)](https://github.com/sponsors/danielz0)
 
 **Why did this chunk match?** A retrieval debugger for embedding-based
 search/RAG. Its core feature — the reason it exists — is catching
