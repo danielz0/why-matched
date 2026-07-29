@@ -1,8 +1,6 @@
 # WhyMatched
 
-[![PyPI](https://img.shields.io/pypi/v/whymatched?color=7B61FF)](https://pypi.org/project/whymatched/)
-[![Python Versions](https://img.shields.io/pypi/pyversions/whymatched?color=4FC3F7)](https://test.pypi.org/project/whymatched/)
-[![PyPI Downloads](https://img.shields.io/pypi/dm/whymatched?color=5CE1B6)](https://test.pypi.org/project/whymatched/)
+[![PyPI](https://img.shields.io/pypi/v/whymatched?color=7B61FF)](https://test.pypi.org/project/whymatched/)
 [![License: MIT](https://img.shields.io/github/license/danielz0/why-matched?color=FF5CC8)](https://github.com/danielz0/why-matched/blob/main/LICENSE)
 [![Coverage](coverage.svg)](https://github.com/danielz0/why-matched/actions/workflows/ci.yml)
 [![GitHub Stars](https://img.shields.io/github/stars/danielz0/why-matched?style=social)](https://github.com/danielz0/why-matched)
