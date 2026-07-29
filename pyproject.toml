@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "whymatched"
-version = "0.2.0"
+version = "0.2.2"
 description = "Why did this chunk match? Token-level attribution, negation/near-synonym collapse detection, and embedding-space visualization for retrieval debugging."
 readme = "README.md"
 requires-python = ">=3.9"
