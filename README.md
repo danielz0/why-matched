@@ -1,11 +1,20 @@
 # whymatched
 
+[![CI](https://github.com/danielz0/why-matched/actions/workflows/ci.yml/badge.svg)](https://github.com/danielz0/why-matched/actions/workflows/ci.yml)
+[![coverage](coverage.svg)](https://github.com/danielz0/why-matched/actions/workflows/ci.yml)
+[![PyPI version](https://img.shields.io/pypi/v/whymatched.svg)](https://pypi.org/project/whymatched/)
+[![Python versions](https://img.shields.io/pypi/pyversions/whymatched.svg)](https://pypi.org/project/whymatched/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 **Why did this chunk match?** A retrieval debugger for embedding-based
-search/RAG: given a query, a set of retrieved chunks, and an embedding
-model, it tells you which words actually drove the similarity score, flags
-cases where negation or antonym flips barely move the score (a huge and
-under-diagnosed source of bad retrieval), and projects the query and chunks
-into 2D so you can see the geometry behind a ranking.
+search/RAG. Its core feature — the reason it exists — is catching
+**negation/antonym collapse**: cases where a retrieved chunk says the
+*opposite* of what the query asked, but the embedding model barely notices
+the difference (a huge, under-diagnosed source of bad retrieval, and
+something no other pip-installable tool currently checks for). On top of
+that it gives you token-level attribution (which words actually drove the
+similarity score) and a 2D projection of the query and chunks, so you can
+see the geometry behind a ranking.
 
 Author: Daniel Zimnicki. Licensed under the [MIT License](LICENSE) — free and open source, use it however you like.
 
@@ -38,10 +47,10 @@ model = LocalModel.from_sentence_transformers("sentence-transformers/all-MiniLM-
 debugger = Debugger(model)  # method="auto": Integrated Gradients for local models
 
 result = debugger.analyze(
-    query="Is remote work allowed for contractors?",
+    query="Does the machine need supervision to run?",
     chunks=[
-        "Remote work is not allowed for contractors under this policy.",
-        "Employees may take unlimited vacation days.",
+        "The machine runs without supervision.",
+        "Only certified technicians are permitted to operate the machine.",
     ],
 )
 
@@ -53,11 +62,19 @@ for c in result.chunks:
 ```
 
 Run it and the top hit — which says the *opposite* of what's true — scores
-0.86 similarity, and `collapse_flags` tells you exactly why: removing "not"
-only moves the score from 0.860 to 0.925 (7.5% relative change). See
-`examples/quickstart.py` and `examples/demo_negation_and_synonym_pairs.py`
+0.826 similarity, and `collapse_flags` tells you exactly why: removing
+"without" barely moves the score at all, from 0.826 to 0.828 — a **0.1%
+relative change**. The embedding model is essentially blind to the one word
+that determines whether this chunk answers the question or contradicts it.
+See `examples/quickstart.py` and `examples/demo_negation_and_synonym_pairs.py`
 — see [`examples/README.md`](examples/README.md) for a field-by-field guide
 to interpreting the output.
+
+This isn't a cherry-picked anecdote — see
+[`benchmarks/`](benchmarks/README.md) for a 30-case negation/antonym
+benchmark (plus a neutral control set) that measures how often the real
+detector catches this failure mode, and how often it stays quiet when it
+should.
 
 ## Using a hosted embedding API instead of a local model
 
@@ -96,6 +113,33 @@ framework objects leak into your application.
 Pass `method=` to `Debugger(...)` to force one; `"auto"` (default) picks
 Integrated Gradients for local models and occlusion for API models.
 
+**Caveat:** occlusion "importance" is partly confounded by length — removing
+*any* word shifts a mean-pooled sentence vector somewhat, regardless of that
+word's actual meaning — so occlusion weights are a directional hint about
+what the model is keying on, not a clean decomposition of "semantic
+importance." Integrated Gradients is more faithful (it attributes the exact
+function that produced the score) but is only available for local models.
+
+## How this relates to prior work
+
+Token-level attribution by itself is not new — `occlusion` and
+`integrated_gradients` are standard XAI techniques (the kind Captum and SHAP
+already implement) applied here to bi-encoder similarity instead of a
+classifier's logits. Two lines of prior work do something similar for
+embedding/retrieval models specifically: **BiLRP** (Vu et al., layer-wise
+relevance propagation for explaining pairwise similarity between two
+transformer encodings) and **MaxSimE / ColBERT-style late interaction**
+(token-level attribution via per-token max-similarity, which `whymatched`'s
+`maxsim` method is directly modeled on). If you need a deep, faithful
+explanation of *why two vectors are close*, those are worth reading.
+
+What isn't covered by that prior art — and what `whymatched` actually adds —
+is turning attribution into an automated **diagnostic**: systematically
+building negation/antonym counterfactuals and flagging when the model fails
+to react to a meaning-reversing change. That's the part with no existing
+pip-installable equivalent, and the part worth trusting the benchmark in
+[`benchmarks/`](benchmarks/README.md) over rather than taking on faith.
+
 ## Negation / antonym collapse detection
 
 For each recognized negation cue (`not`, `never`, `without`, `cannot`, `unless`, ...)
@@ -127,9 +171,9 @@ result = debugger.analyze(query, chunks, projection_level="token")     # local m
 
 ```bash
 whymatched run \
-  --query "Is remote work allowed for contractors?" \
-  --chunk "Remote work is not allowed for contractors under this policy." \
-  --chunk "Employees may take unlimited vacation days." \
+  --query "Does the machine need supervision to run?" \
+  --chunk "The machine runs without supervision." \
+  --chunk "Only certified technicians are permitted to operate the machine." \
   --out report.html
 ```
 
@@ -152,6 +196,14 @@ all options (`--input file.json` for `{"query": ..., "chunks": [...]}`,
   treat flags as "worth a human look," not ground truth.
 - Gradient and MaxSim attribution require `LocalModel` (full access to the
   differentiable forward pass); hosted APIs only support occlusion.
+- Occlusion importance is confounded by sentence length: removing *any* word
+  shifts a mean-pooled vector somewhat regardless of that word's actual
+  meaning, so occlusion weights are a directional hint about what the model
+  is keying on, not a clean decomposition of semantic importance. Integrated
+  Gradients doesn't have this issue, but is local-model-only (see above).
+- The collapse-detection recall rate on curated hard cases is measured, not
+  assumed — see [`benchmarks/`](benchmarks/README.md) for the current numbers
+  and how to reproduce them against your own embedding model.
 
 ## Development
 

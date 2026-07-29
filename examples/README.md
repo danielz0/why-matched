@@ -30,24 +30,18 @@ query/chunk projection.
 Running the script produces output like this:
 
 ```
-query: Is remote work allowed for contractors?
+query: Does the machine need supervision to run?
 model: sentence-transformers/all-MiniLM-L6-v2  method: integrated_gradients
 
-#1  score=0.860  'Remote work is not allowed for contractors under this policy.'
-   driving tokens: [('contractors', 0.162), ('work', 0.138), ('remote', 0.126), ('allowed', 0.092), ('policy', 0.066)]
-   ! negation_collapse (chunk): 'not' barely moves the score (0.860 -> 0.925, 7.5% relative change)
-   ! antonym_collapse (query): 'allowed -> prohibited' barely moves the score (0.860 -> 0.891, 3.6% relative change)
-   ! antonym_collapse (chunk): 'allowed -> prohibited' barely moves the score (0.860 -> 0.836, 2.8% relative change)
+#1  score=0.826  'The machine runs without supervision.'
+   driving tokens: [('supervision', 0.257), ('machine', 0.189), ('runs', 0.142), ('the', 0.062), ('without', 0.046)]
+   ! negation_collapse (chunk): 'without' barely moves the score (0.826 -> 0.828, 0.1% relative change)
 
-#2  score=0.368  'Contractors must complete onboarding within their first week.'
-   driving tokens: [('contractors', 0.135), ('onboard', 0.083), ('must', 0.057), ('complete', 0.02), ('week', 0.016)]
-   ! antonym_collapse (query): 'allowed -> prohibited' barely moves the score (0.368 -> 0.344, 6.5% relative change)
-   ! antonym_collapse (chunk): 'must -> may' barely moves the score (0.368 -> 0.365, 0.9% relative change)
+#2  score=0.430  'Only certified technicians are permitted to operate the machine.'
+   driving tokens: [('machine', 0.128), ('operate', 0.076), ('permitted', 0.044), ('technicians', 0.025), ('the', 0.016)]
 
-#3  score=0.237  'Employees may take unlimited vacation days.'
-   driving tokens: [('employees', 0.092), ('vacation', 0.051), ('unlimited', 0.038), ('days', 0.03), ('take', 0.025)]
-   ! antonym_collapse (query): 'allowed -> prohibited' barely moves the score (0.237 -> 0.253, 6.5% relative change)
-   ! antonym_collapse (chunk): 'may -> must' barely moves the score (0.237 -> 0.245, 3.2% relative change)
+#3  score=0.159  'Routine maintenance should be scheduled every six months.'
+   driving tokens: [('scheduled', 0.073), ('maintenance', 0.032), ('every', 0.016), ('should', 0.009), ('.', 0.004)]
 ```
 
 Below is a field-by-field guide to reading it.
@@ -55,7 +49,7 @@ Below is a field-by-field guide to reading it.
 ### Header
 
 ```
-query: Is remote work allowed for contractors?
+query: Does the machine need supervision to run?
 model: sentence-transformers/all-MiniLM-L6-v2  method: integrated_gradients
 ```
 
@@ -77,7 +71,7 @@ back to `occlusion`.
   similarity, not factual correctness or relevance to the user's intent.
 
 ```
-driving tokens: [('contractors', 0.162), ('work', 0.138), ('remote', 0.126), ('allowed', 0.092), ('policy', 0.066)]
+driving tokens: [('supervision', 0.257), ('machine', 0.189), ('runs', 0.142), ('the', 0.062), ('without', 0.046)]
 ```
 
 The chunk's words ranked by their contribution to the score above. With
@@ -85,46 +79,37 @@ The chunk's words ranked by their contribution to the score above. With
 itself: a positive weight means the token pushed the similarity **up**; a
 negative weight (not shown here, since only the top 5 are printed) would
 mean it pulled the score **down**. Magnitude indicates relative importance.
-In this example, "contractors" contributed the most to the match, "policy"
-the least among the top five.
+In this example, "supervision" contributed the most to the match — and
+"without" the *least* among the top five. That's not a coincidence: it's
+the same blind spot the collapse flag below calls out from a different
+angle. The one word that reverses this chunk's meaning barely registers in
+either the attribution or the score.
 
 ```
-! negation_collapse (chunk): 'not' barely moves the score (0.860 -> 0.925, 7.5% relative change)
+! negation_collapse (chunk): 'without' barely moves the score (0.826 -> 0.828, 0.1% relative change)
 ```
 
-This is the key diagnostic line. It means: the word "not" was deleted from
-the chunk, the result was re-embedded, and the score only moved from 0.860
-to 0.925 — a 7.5% relative change. Since "not" is precisely the word that
-makes this chunk assert the **opposite** of what the query asks, a small
-relative change indicates the model is largely insensitive to its presence.
-That is a genuine blind spot: the embedding cannot reliably distinguish
-"allowed" from "not allowed," yet this chunk is still ranked first.
+This is the key diagnostic line. It means: the word "without" was deleted
+from the chunk, the result was re-embedded, and the score barely moved at
+all — from 0.826 to 0.828, a 0.1% relative change. Since "without" is
+precisely the word that makes this chunk assert the **opposite** of what
+the query asks ("does it need supervision" vs. "it runs without
+supervision"), a near-zero relative change means the model is essentially
+blind to its presence. That is a genuine blind spot: the embedding cannot
+reliably distinguish "needs supervision" from "runs without supervision,"
+yet this chunk is still ranked first.
 
-```
-! antonym_collapse (query): 'allowed -> prohibited' barely moves the score
-! antonym_collapse (chunk): 'allowed -> prohibited' barely moves the score
-```
+### Why chunks #2 and #3 have no flags
 
-The same test applied differently: instead of deleting a negation, a word
-is swapped for its antonym (`allowed -> prohibited`), once on the query
-side and once on the chunk side. Both again show only a small relative
-change — two independent confirmations of the same underlying weakness.
-
-### Why the same flag appears on chunks #2 and #3
-
-```
-#2  score=0.368  ... ! antonym_collapse (query): 'allowed -> prohibited' ...
-#3  score=0.237  ... ! antonym_collapse (query): 'allowed -> prohibited' ...
-```
-
-The `(query)`-side check swaps "allowed" for "prohibited" in the query
-only, holding each chunk fixed. It measures whether the query's own
-embedding is sensitive to that meaning flip — a property of the query, not
-of any particular chunk — so it fires against every chunk in the batch.
-This should not be read as "chunk #3 is a dangerous mismatch": chunk #3
-scored low (0.237) and was never competitive for the top rank. **A collapse
-flag is far more actionable when it appears on a high-scoring chunk than on
-a low-scoring one.**
+Chunks #2 and #3 print no `!` lines at all. That's not the same as "verified
+correct" — collapse detection only fires a check when it finds a
+recognized negation cue or antonym-eligible word to test in the first
+place. Neither chunk contains one (`permitted`, `certified`, `scheduled`,
+etc. aren't in the negation-cue list or the antonym dictionary), so no
+counterfactual was built and nothing was tested. Read a clean chunk as "no
+applicable test was triggered," not as a positive guarantee — see
+`collapse_threshold` and the antonym dictionary's coverage limits in the
+main [README](../README.md#known-limitations).
 
 ### Practical guidance
 
@@ -134,7 +119,11 @@ a low-scoring one.**
   competitive for retrieval regardless of the flagged word.
 - **Driving tokens** show what the model is actually keying on, which
   helps distinguish a score driven by the substantive answer word from one
-  driven by generic overlapping vocabulary (e.g. "work," "contractors").
+  driven by generic overlapping vocabulary (e.g. "machine," "runs").
+- **This isn't a cherry-picked example.** See [`../benchmarks/`](../benchmarks/README.md)
+  for a 30-case negation/antonym benchmark, plus a neutral control set, that
+  measures how often the real detector catches this failure mode and how
+  often it stays quiet when it should.
 
 For a visual equivalent of this same information — color-coded token
 highlighting and a query/chunk projection plot — generate an HTML report
@@ -142,9 +131,9 @@ instead of using the library directly:
 
 ```bash
 whymatched run \
-  --query "Is remote work allowed for contractors?" \
-  --chunk "Remote work is not allowed for contractors under this policy." \
-  --chunk "Employees may take unlimited vacation days." \
+  --query "Does the machine need supervision to run?" \
+  --chunk "The machine runs without supervision." \
+  --chunk "Only certified technicians are permitted to operate the machine." \
   --out report.html
 ```
 

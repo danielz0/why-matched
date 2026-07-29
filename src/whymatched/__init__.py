@@ -7,7 +7,7 @@ from .models.local import LocalModel
 from .projection import ProjectedPoint
 from .report import render_html, write_html
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 __all__ = [
     "Debugger",

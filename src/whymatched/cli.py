@@ -85,6 +85,10 @@ def main(argv: Optional[List[str]] = None) -> None:
         "--method", default="auto", choices=["auto", "occlusion", "integrated_gradients", "maxsim"],
         help="attribution method (default: auto = gradients for local models, occlusion for API models)",
     )
+    run.add_argument(
+        "--gradient-baseline", default="pad", choices=["pad", "mask", "zero"],
+        help="Integrated Gradients reference point (default: pad-token embedding)",
+    )
     run.add_argument("--no-collapse", action="store_true", help="skip negation/antonym collapse detection")
     run.add_argument("--no-projection", action="store_true", help="skip the 2D projection")
     run.add_argument("--projection-level", default="sentence", choices=["sentence", "token"])
@@ -97,7 +101,7 @@ def main(argv: Optional[List[str]] = None) -> None:
     if args.command == "run":
         query, chunks = _load_chunks(args)
         model = _build_model(args)
-        debugger = Debugger(model, method=args.method)
+        debugger = Debugger(model, method=args.method, gradient_baseline=args.gradient_baseline)
         result = debugger.analyze(
             query,
             chunks,

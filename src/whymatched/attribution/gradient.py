@@ -15,7 +15,31 @@ def _require_captum():
         ) from e
 
 
-def gradient_attribution(model, query: str, chunk: str, n_steps: int = 32) -> AttributionResult:
+def _baseline_token_id(tokenizer, baseline: str) -> int:
+    if baseline == "pad":
+        token_id = tokenizer.pad_token_id
+        if token_id is None:
+            token_id = tokenizer.eos_token_id
+        if token_id is None:
+            raise ValueError(
+                "tokenizer has no pad_token_id or eos_token_id to use as the IG baseline; "
+                "pass baseline='zero' or baseline='mask' instead"
+            )
+        return token_id
+    if baseline == "mask":
+        token_id = tokenizer.mask_token_id
+        if token_id is None:
+            raise ValueError(
+                "tokenizer has no mask_token_id to use as the IG baseline; "
+                "pass baseline='pad' or baseline='zero' instead"
+            )
+        return token_id
+    raise ValueError(f"unknown baseline: {baseline!r}; use 'pad', 'mask', or 'zero'")
+
+
+def gradient_attribution(
+    model, query: str, chunk: str, n_steps: int = 32, baseline: str = "pad"
+) -> AttributionResult:
     """Integrated Gradients attribution of the cosine similarity score to
     each input token embedding. Requires a :class:`~whymatched.models.local.LocalModel`
     (full access to the differentiable forward pass).
@@ -23,6 +47,15 @@ def gradient_attribution(model, query: str, chunk: str, n_steps: int = 32) -> At
     Unlike occlusion, this attributes the *exact* function that produced the
     score (embed -> pool -> normalize -> cosine), rather than approximating it
     via word deletion, at the cost of only being available for local models.
+
+    ``baseline`` controls the IG reference point each token embedding is
+    integrated from: ``"pad"`` (default) uses the model's pad-token embedding
+    at every position, ``"mask"`` uses its mask-token embedding, and ``"zero"``
+    uses the origin. The zero vector is not a point the model's forward pass
+    was ever trained to see as "absence of a token," so it can produce
+    misleading attributions; pad/mask are the standard choices for IG on
+    transformers and are preferred unless you have a specific reason to use
+    the origin.
     """
     if not getattr(model, "supports_gradients", False):
         raise ValueError(
@@ -59,12 +92,17 @@ def gradient_attribution(model, query: str, chunk: str, n_steps: int = 32) -> At
         embedding_layer = model.model.get_input_embeddings()
         inputs_embeds = embedding_layer(enc["input_ids"]).detach()
         attention_mask = enc["attention_mask"]
-        baseline = torch.zeros_like(inputs_embeds)
+        if baseline == "zero":
+            baseline_embeds = torch.zeros_like(inputs_embeds)
+        else:
+            baseline_token_id = _baseline_token_id(model.tokenizer, baseline)
+            baseline_ids = torch.full_like(enc["input_ids"], baseline_token_id)
+            baseline_embeds = embedding_layer(baseline_ids).detach()
 
         ig = IntegratedGradients(make_forward(fixed_vec))
         attributions = ig.attribute(
             inputs_embeds,
-            baselines=baseline,
+            baselines=baseline_embeds,
             additional_forward_args=(attention_mask,),
             n_steps=n_steps,
         )

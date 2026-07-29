@@ -66,11 +66,13 @@ class Debugger:
         method: AttributionMethod = "auto",
         collapse_threshold: float = 0.10,
         use_wordnet: bool = False,
+        gradient_baseline: str = "pad",
     ):
         self.model = model
         self.method = method
         self.collapse_threshold = collapse_threshold
         self.use_wordnet = use_wordnet
+        self.gradient_baseline = gradient_baseline
 
     def _resolve_method(self) -> str:
         if self.method != "auto":
@@ -83,7 +85,7 @@ class Debugger:
         if method == "occlusion":
             return occlusion_attribution(self.model, query, chunk)
         if method == "integrated_gradients":
-            return gradient_attribution(self.model, query, chunk)
+            return gradient_attribution(self.model, query, chunk, baseline=self.gradient_baseline)
         if method == "maxsim":
             return maxsim_attribution(self.model, query, chunk)
         raise ValueError(f"unknown attribution method: {method!r}")

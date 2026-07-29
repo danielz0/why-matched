@@ -7,11 +7,11 @@ debugger = Debugger(model)  # method="auto" -> Integrated Gradients for local mo
 
 # Classic RAG failure: the top-scoring chunk says the OPPOSITE of what's true.
 result = debugger.analyze(
-    query="Is remote work allowed for contractors?",
+    query="Does the machine need supervision to run?",
     chunks=[
-        "Remote work is not allowed for contractors under this policy.",
-        "Employees may take unlimited vacation days.",
-        "Contractors must complete onboarding within their first week.",
+        "The machine runs without supervision.",
+        "Routine maintenance should be scheduled every six months.",
+        "Only certified technicians are permitted to operate the machine.",
     ],
 )
 
