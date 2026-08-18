@@ -6,8 +6,6 @@ from .fakes import FakeBagOfWordsModel
 def test_negation_collapse_flagged_when_score_barely_moves():
     model = FakeBagOfWordsModel()
     query = "is remote work allowed for contractors"
-    # "not" is one word among many in a bag-of-words model, so removing it
-    # barely changes the vector -> should be flagged as a collapse.
     chunk = "remote work is not allowed for contractors under this policy document"
     flags = detect_collapse(model, query, chunk, threshold=0.15)
     kinds = {f.kind for f in flags}

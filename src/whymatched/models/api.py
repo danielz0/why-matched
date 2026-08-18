@@ -50,7 +50,6 @@ class APIEmbeddingModel(EmbeddingModel):
     def tokenize(self, text: str) -> List[str]:
         return simple_tokenize(text)
 
-    # -- convenience constructors for common providers --------------------
 
     @classmethod
     def openai(

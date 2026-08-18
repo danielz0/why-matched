@@ -23,10 +23,7 @@ def test_render_html_contains_query_and_chunks():
     result = _analyze()
     out = render_html(result)
     assert "<html>" in out
-    # the query is rendered verbatim as a whole string
     assert "is remote work allowed for contractors" in out
-    # chunk text is rendered as individual per-token spans, not the raw
-    # sentence, so check for a couple of its words instead of the phrase
     assert ">remote<" in out
     assert ">allowed<" in out
     assert result.model_name in out

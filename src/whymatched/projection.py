@@ -76,7 +76,7 @@ def project_token_level(
 
     special = set(getattr(model.tokenizer, "all_special_tokens", []))
     all_vecs = []
-    meta = []  # (label, kind, chunk_index)
+    meta = []
 
     q_tokens, q_vecs = model.token_embeddings(query)
     for t, v in zip(q_tokens, q_vecs):

@@ -83,7 +83,6 @@ class LocalModel(EmbeddingModel):
         inst.model.eval()
         return inst
 
-    # -- internals -----------------------------------------------------
 
     def _tokenize_batch(self, texts: Sequence[str]):
         return self.tokenizer(
@@ -107,7 +106,6 @@ class LocalModel(EmbeddingModel):
         counts = mask.sum(dim=1).clamp(min=1e-9)
         return summed / counts
 
-    # -- public API ------------------------------------------------------
 
     def embed(self, texts: Sequence[str]) -> np.ndarray:
         import torch

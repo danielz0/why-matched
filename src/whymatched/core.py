@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 from dataclasses import dataclass, field
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, Sequence
 
 import numpy as np
 
@@ -10,6 +10,7 @@ from .attribution.base import AttributionResult
 from .attribution.gradient import gradient_attribution
 from .attribution.maxsim import maxsim_attribution
 from .attribution.occlusion import occlusion_attribution
+from .cache import EmbeddingCache
 from .collapse import CollapseFlag, detect_collapse
 from .projection import ProjectedPoint, project_sentence_level, project_token_level
 from .utils import cosine_similarity
@@ -67,12 +68,28 @@ class Debugger:
         collapse_threshold: float = 0.10,
         use_wordnet: bool = False,
         gradient_baseline: str = "pad",
+        perturbation_kinds: Optional[Sequence[str]] = None,
+        legacy_rules: bool = True,
+        calibrate_collapse: bool = False,
+        n_null: int = 50,
+        quantile: float = 0.10,
+        correction: Literal["none", "bh"] = "none",
+        alpha: float = 0.05,
+        seed: int = 0,
     ):
         self.model = model
         self.method = method
         self.collapse_threshold = collapse_threshold
         self.use_wordnet = use_wordnet
         self.gradient_baseline = gradient_baseline
+        self.perturbation_kinds = perturbation_kinds
+        self.legacy_rules = legacy_rules
+        self.calibrate_collapse = calibrate_collapse
+        self.n_null = n_null
+        self.quantile = quantile
+        self.correction = correction
+        self.alpha = alpha
+        self.seed = seed
 
     def _resolve_method(self) -> str:
         if self.method != "auto":
@@ -108,13 +125,28 @@ class Debugger:
         scores = cosine_similarity(query_vec, chunk_vecs)[0]
         order = np.argsort(-scores)
 
+        collapse_cache = EmbeddingCache(self.model) if detect_collapse_flags else None
+
         chunk_analyses: List[ChunkAnalysis] = []
         for rank, idx in enumerate(order):
             chunk = chunks[idx]
             attribution = self._attribute(method, query, chunk)
             flags = (
                 detect_collapse(
-                    self.model, query, chunk, threshold=self.collapse_threshold, use_wordnet=self.use_wordnet
+                    self.model,
+                    query,
+                    chunk,
+                    threshold=self.collapse_threshold,
+                    use_wordnet=self.use_wordnet,
+                    kinds=self.perturbation_kinds,
+                    legacy_rules=self.legacy_rules,
+                    seed=self.seed + rank,
+                    cache=collapse_cache,
+                    calibrate=self.calibrate_collapse,
+                    n_null=self.n_null,
+                    quantile=self.quantile,
+                    correction=self.correction,
+                    alpha=self.alpha,
                 )
                 if detect_collapse_flags
                 else []

@@ -12,8 +12,6 @@ def test_occlusion_weights_reflect_shared_words():
     assert result.method == "occlusion"
     assert 0.0 < result.base_score <= 1.0
 
-    # Removing a word the two texts share should hurt the score (positive weight);
-    # removing a word absent from the query barely changes anything (weight ~0).
     by_token = {t.token: t.weight for t in result.chunk_tokens}
     assert by_token["remote"] > by_token["banned"]
     assert by_token["work"] > by_token["banned"]

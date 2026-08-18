@@ -58,7 +58,6 @@ def maxsim_attribution(model, query: str, chunk: str) -> AttributionResult:
             "sim_matrix": sim_matrix.tolist(),
             "query_tokens": q_tokens_f,
             "chunk_tokens": c_tokens_f,
-            # for each query token, which chunk token is its best match (and vice versa)
             "query_best_match": [c_tokens_f[i] if len(c_tokens_f) else None for i in q_argmax],
             "chunk_best_match": [q_tokens_f[i] if len(q_tokens_f) else None for i in c_argmax],
         },

@@ -1,0 +1,7 @@
+{
+  "PERSON": ["Alex Chen", "Maria Novak", "James Whitfield", "Priya Rao", "Tomas Berg"],
+  "ORG": ["Northwind Traders", "Globex Corporation", "Initech", "Umbra Systems", "Acme Holdings"],
+  "PRODUCT": ["QuantumBook Pro", "Vertex X200", "Slate Reader", "Nimbus Drive", "Falcon Suite"],
+  "GPE": ["Springfield", "Lakeside", "Millbrook", "Rosewood", "Fairhaven"],
+  "LOC": ["the Meridian Range", "Cedar Valley", "the Thornfield District", "Elmwood Basin", "the Coastal Plateau"]
+}

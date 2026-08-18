@@ -6,6 +6,7 @@ from __future__ import annotations
 import html
 from typing import List, Sequence
 
+from .batch import BatchReport, CaseReport
 from .core import AnalysisResult, ChunkAnalysis
 from .attribution.base import TokenScore
 from .projection import ProjectedPoint
@@ -150,3 +151,108 @@ def render_html(result: AnalysisResult, title: str = "why-matched report") -> st
 def write_html(result: AnalysisResult, path: str, title: str = "why-matched report") -> None:
     with open(path, "w", encoding="utf-8") as f:
         f.write(render_html(result, title=title))
+
+
+_BATCH_CSS_EXTRA = """
+.batch-summary { border: 1px solid #e5e7eb; border-radius: 10px; padding: 1rem 1.25rem;
+                  margin-bottom: 1.5rem; background: #fafafa; }
+.rate { font-size: 1.4rem; font-weight: 700; }
+table.kind-table { border-collapse: collapse; font-size: 0.85rem; margin: 0.5rem 0; }
+table.kind-table td, table.kind-table th { padding: 0.2rem 0.6rem; text-align: left; border-bottom: 1px solid #e5e7eb; }
+.triple { font-size: 0.8rem; color: #6b7280; margin-top: 0.3rem; }
+.error { background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px; padding: 0.5rem 0.75rem; margin: 0.4rem 0; font-size: 0.88rem; color: #991b1b; }
+@media (prefers-color-scheme: dark) {
+  .batch-summary { background: #171a21 !important; border-color: #2a2e37 !important; }
+  table.kind-table td, table.kind-table th { border-color: #2a2e37 !important; }
+  .error { background: #3a1a1a !important; border-color: #7a2a2a !important; color: #fca5a5 !important; }
+}
+"""
+
+
+def _render_kind_table(report: BatchReport) -> str:
+    rows = "".join(
+        f"<tr><td>{html.escape(k)}</td><td>{v*100:.1f}%</td></tr>"
+        for k, v in sorted(report.rate_by_kind().items())
+    )
+    if not rows:
+        return ""
+    return f'<table class="kind-table"><tr><th>kind</th><th>collapse rate</th></tr>{rows}</table>'
+
+
+def _render_triple(calibration) -> str:
+    if not calibration:
+        return ""
+    parts = []
+    for side, nc in sorted(calibration.items()):
+        means = {
+            name: (sum(vals) / len(vals) if vals else float("nan"))
+            for name, vals in nc.generator_deltas.items()
+        }
+        summary = ", ".join(f"{name}={v:.3f}" for name, v in sorted(means.items()))
+        parts.append(f"{side}: {summary}")
+    return f'<div class="triple">null deltas (mean): {html.escape(" | ".join(parts))}</div>'
+
+
+def _render_case_report(case: CaseReport) -> str:
+    if case.error is not None:
+        return (
+            f'<div class="chunk"><h2>[{html.escape(case.case_id)}] '
+            f'<span class="score">error</span></h2>'
+            f"<p>{html.escape(case.query)}</p>"
+            f'<div class="error">case errored during evaluation: {html.escape(case.error)}</div>'
+            f"</div>"
+        )
+
+    rows = []
+    for r in case.collapses:
+        q = f"{r.null_quantile:.3f}" if r.null_quantile is not None else "n/a"
+        ratio = f"{r.ratio:.2f}" if r.ratio is not None else "n/a"
+        rows.append(
+            f'<div class="flag"><span class="flag-kind">{html.escape(r.kind)}</span> '
+            f'({html.escape(r.side)}) trigger=<code>{html.escape(r.trigger)}</code> — '
+            f"score {r.base_score:.3f} → {r.counterfactual_score:.3f}, Q={q}, ratio={ratio}<br>"
+            f'<span style="opacity:0.8">counterfactual: "{html.escape(r.counterfactual_snippet)}"</span></div>'
+        )
+    return (
+        f'<div class="chunk"><h2>[{html.escape(case.case_id)}] '
+        f'<span class="score">{case.top_score:.3f}</span></h2>'
+        f"<p>{html.escape(case.query)}</p>"
+        f"{''.join(rows)}"
+        f"{_render_triple(case.calibration)}"
+        f"</div>"
+    )
+
+
+def render_batch_html(report: BatchReport, path: str, worst_n: int = 20) -> None:
+    """Write a self-contained batch HTML report: summary header (overall
+    rate, per-kind table, skipped/errored counts), then the worst-N cases
+    expanded with trigger, base vs. counterfactual score, Q, ratio, and the
+    orthographic/synonym/deletion triple. Reuses `_color_for_weight`-style
+    CSS conventions from the single-analysis report."""
+    rate = report.collapse_rate()
+    cand_rate = report.candidate_collapse_rate()
+    worst_html = "".join(_render_case_report(c) for c in report.worst(worst_n))
+    html_out = f"""<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>whymatched batch report</title>
+<style>{_CSS}{_BATCH_CSS_EXTRA}</style>
+</head>
+<body>
+<h1>why-matched — batch scan</h1>
+<div class="meta">model: <code>{html.escape(report.model_name)}</code> &middot;
+whymatched {html.escape(report.whymatched_version)} &middot; {html.escape(report.created_at)}</div>
+<div class="batch-summary">
+  <div class="rate">collapse_rate = {rate*100:.1f}%</div>
+  <div>candidate_collapse_rate = {cand_rate*100:.1f}%</div>
+  <div>{len(report.cases)} cases scanned &middot; {report.n_skipped} skipped &middot; {report.n_errored} errored</div>
+  {_render_kind_table(report)}
+</div>
+<div class="section-label">Worst {min(worst_n, len(report.cases))} cases</div>
+{worst_html}
+</body>
+</html>
+"""
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(html_out)

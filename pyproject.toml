@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "whymatched"
-version = "0.2.2"
+version = "0.3.0"
 description = "Why did this chunk match? Token-level attribution, negation/near-synonym collapse detection, and embedding-space visualization for retrieval debugging."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -39,6 +39,7 @@ openai = ["openai>=1.0"]
 cohere = ["cohere>=5.0"]
 voyage = ["voyageai>=0.2"]
 viz = ["umap-learn>=0.5"]
+entity = ["spacy>=3.7"]
 all = [
     "torch>=2.0",
     "transformers>=4.35",
@@ -48,11 +49,17 @@ all = [
     "cohere>=5.0",
     "voyageai>=0.2",
     "umap-learn>=0.5",
+    "spacy>=3.7",
 ]
 dev = ["pytest>=7", "pytest-cov>=4", "coverage-badge>=1.1"]
 
 [project.scripts]
 whymatched = "whymatched.cli:main"
+
+[tool.pytest.ini_options]
+markers = [
+    "optional_deps: requires optional runtime dependencies (torch/spacy/etc.)",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]

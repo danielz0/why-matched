@@ -65,8 +65,6 @@ def test_token_level_projection(model):
     assert "chunk_token" in kinds
 
 
-# -- dedicated gradient_attribution tests -----------------------------------
-
 def test_gradient_attribution_token_counts_match_tokenizer(model):
     pytest.importorskip("captum")
     query, chunk = "remote work policy", "the policy covers remote work"
@@ -85,13 +83,11 @@ def test_gradient_attribution_pad_vs_zero_baseline_differ(model):
     pad_result = gradient_attribution(model, query, chunk, baseline="pad")
     zero_result = gradient_attribution(model, query, chunk, baseline="zero")
 
-    # same underlying score either way -- baseline only affects attribution, not the score itself
     assert abs(pad_result.base_score - zero_result.base_score) < 1e-5
 
     pad_weights = [t.weight for t in pad_result.chunk_tokens]
     zero_weights = [t.weight for t in zero_result.chunk_tokens]
     assert len(pad_weights) == len(zero_weights)
-    # different reference points should not produce numerically identical attributions
     assert any(abs(a - b) > 1e-4 for a, b in zip(pad_weights, zero_weights))
 
 
@@ -101,8 +97,6 @@ def test_gradient_attribution_unknown_baseline_raises(model):
         gradient_attribution(model, "a", "b", baseline="bogus")
 
 
-# -- dedicated maxsim_attribution tests --------------------------------------
-
 def test_maxsim_attribution_direct_shapes_and_best_matches(model):
     query, chunk = "remote work", "remote work policy"
     result = maxsim_attribution(model, query, chunk)
@@ -111,7 +105,6 @@ def test_maxsim_attribution_direct_shapes_and_best_matches(model):
     assert sim_matrix.shape == (len(result.query_tokens), len(result.chunk_tokens))
     assert len(result.extra["query_best_match"]) == len(result.query_tokens)
     assert len(result.extra["chunk_best_match"]) == len(result.chunk_tokens)
-    # every query token's maxsim weight must equal its row max in the similarity matrix
     for i, tok in enumerate(result.query_tokens):
         assert abs(tok.weight - sim_matrix[i].max()) < 1e-5
 

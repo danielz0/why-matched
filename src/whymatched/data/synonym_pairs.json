@@ -1,0 +1,23 @@
+[
+  ["purchase", "buy"], ["purchases", "buys"], ["purchased", "bought"], ["purchasing", "buying"],
+  ["require", "need"], ["requires", "needs"], ["required", "needed"], ["requiring", "needing"],
+  ["begin", "start"], ["begins", "starts"], ["began", "started"], ["beginning", "starting"],
+  ["assist", "help"], ["assists", "helps"], ["assisted", "helped"], ["assisting", "helping"],
+  ["obtain", "get"], ["obtains", "gets"], ["obtained", "got"], ["obtaining", "getting"],
+  ["utilize", "use"], ["utilizes", "uses"], ["utilized", "used"], ["utilizing", "using"],
+  ["modify", "change"], ["modifies", "changes"], ["modified", "changed"], ["modifying", "changing"],
+  ["indicate", "show"], ["indicates", "shows"], ["indicated", "showed"], ["indicating", "showing"],
+  ["provide", "give"], ["provides", "gives"], ["provided", "gave"], ["providing", "giving"],
+  ["request", "ask"], ["requests", "asks"], ["requested", "asked"], ["requesting", "asking"],
+  ["complete", "finish"], ["completes", "finishes"], ["completed", "finished"], ["completing", "finishing"],
+  ["retain", "keep"], ["retains", "keeps"], ["retained", "kept"], ["retaining", "keeping"],
+  ["examine", "check"], ["examines", "checks"], ["examined", "checked"], ["examining", "checking"],
+  ["verify", "confirm"], ["verifies", "confirms"], ["verified", "confirmed"], ["verifying", "confirming"],
+  ["respond", "reply"], ["responds", "replies"], ["responded", "replied"], ["responding", "replying"],
+  ["attempt", "try"], ["attempts", "tries"], ["attempted", "tried"], ["attempting", "trying"],
+  ["approximately", "about"],
+  ["additionally", "also"],
+  ["sufficient", "enough"],
+  ["quickly", "rapidly"],
+  ["immediately", "promptly"]
+]
