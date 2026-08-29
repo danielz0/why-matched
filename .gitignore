@@ -7,6 +7,12 @@ dist/
 .pytest_cache/
 whymatched_report.html
 .pypirc
+.pypirc.template
 .coverage
 coverage.xml
 .coverage.*
+htmlcov/
+instructions
+instructions/
+instructions/*
+outputs/
