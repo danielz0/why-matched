@@ -1,0 +1,41 @@
+{
+  "by_category": {
+    "negation": {
+      "fn": 6,
+      "fp": 88,
+      "tn": 2,
+      "tp": 304
+    }
+  },
+  "config": {
+    "alpha": 0.05,
+    "calibrate": true,
+    "correction": "none",
+    "dataset": "nevir",
+    "kinds": null,
+    "legacy_rules": true,
+    "max_checks_per_side": 6,
+    "n_null": 50,
+    "noise_eps": 0.01,
+    "quantile": 0.1,
+    "sample_seed": 0,
+    "sample_sha256": "56aa68ab0459c54bdd7088d64e43122b19644b2427d7fc9dd94df8c1f92aa53c",
+    "sample_size": 200,
+    "seed": 0,
+    "split": "test",
+    "threshold": 0.1,
+    "use_wordnet": false
+  },
+  "created_at": "2026-08-28T19:51:55.266874+00:00",
+  "model_name": "sentence-transformers/all-MiniLM-L6-v2",
+  "n_directions": 400,
+  "n_pairs": 200,
+  "overall": {
+    "fn": 6,
+    "fp": 88,
+    "tn": 2,
+    "tp": 304
+  },
+  "source": "nevir",
+  "whymatched_version": "0.3.0"
+}

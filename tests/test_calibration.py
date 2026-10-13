@@ -10,8 +10,6 @@ from whymatched.calibration import (
     DeletionReference,
     OrthographicNull,
     SynonymNull,
-    evaluate_calibrated,
-    fit_profile,
     _benjamini_hochberg,
     _bh_required_n_null,
     _bootstrap_quantile_ci,
@@ -22,11 +20,13 @@ from whymatched.calibration import (
     _ratio,
     _stopwords,
     _z_score,
+    evaluate_calibrated,
+    fit_pair_profile,
+    fit_profile,
 )
 from whymatched.perturbations import get_perturbations, propose_all
-from whymatched.perturbations.negation import NegationPerturbation
 
-from .fakes import CountingModel, FakeBagOfWordsModel
+from .fakes import CountingModel, FakeBagOfWordsModel, NegationAwareModel, NegationBlindModel
 
 LONG_FIXTURE = (
     "The vendor must obtain approval before it can purchase additional equipment. "
@@ -75,7 +75,7 @@ def test_orthographic_null_covers_all_five_rules():
     triggers = {c.trigger for c in candidates}
     assert any("double-space" in t for t in triggers)
     assert any("single-space" in t for t in triggers)
-    assert any("\"" in t for t in triggers)
+    assert any('"' in t for t in triggers)
     assert any("percent" in t for t in triggers)
     assert any("&" in t for t in triggers)
     assert all(c.meaning_preserving for c in candidates)
@@ -173,14 +173,14 @@ def test_bh_required_n_null_matches_spec_worked_examples():
 
 
 def test_bh_hand_example_from_spec():
-    p = np.array([.001, .008, .039, .041, .042, .60, .99])
+    p = np.array([0.001, 0.008, 0.039, 0.041, 0.042, 0.60, 0.99])
     q = _benjamini_hochberg(p)
     rejected = q <= 0.05
     assert rejected.tolist() == [True, True, False, False, False, False, False]
 
 
 def test_bh_monotone_in_p_order():
-    p = np.array([.001, .008, .039, .041, .042, .60, .99])
+    p = np.array([0.001, 0.008, 0.039, 0.041, 0.042, 0.60, 0.99])
     q = _benjamini_hochberg(p)
     order = np.argsort(p)
     q_in_p_order = q[order]
@@ -200,7 +200,9 @@ SHORT_QUERY = "is approval required for a purchase"
 def _long_vs_short_proposals(kinds=("negation", "antonym", "numeric"), max_per_side_per_kind=4, seed=0):
     perturbations = get_perturbations(kinds=kinds)
     rng = random.Random(seed)
-    proposals = propose_all(SHORT_QUERY, LONG_FIXTURE, perturbations, max_per_side_per_kind=max_per_side_per_kind, rng=rng)
+    proposals = propose_all(
+        SHORT_QUERY, LONG_FIXTURE, perturbations, max_per_side_per_kind=max_per_side_per_kind, rng=rng
+    )
     return proposals
 
 
@@ -266,7 +268,9 @@ def test_evaluate_calibrated_bh_only_touches_ok_status_candidates():
     cache = EmbeddingCache(model)
     perturbations = get_perturbations(kinds=("negation",))
     rng = random.Random(0)
-    proposals = propose_all(short_negation_query, NEGATION_RICH_FIXTURE, perturbations, max_per_side_per_kind=8, rng=rng)
+    proposals = propose_all(
+        short_negation_query, NEGATION_RICH_FIXTURE, perturbations, max_per_side_per_kind=8, rng=rng
+    )
     results, _ = evaluate_calibrated(
         cache, short_negation_query, NEGATION_RICH_FIXTURE, proposals, seed=0, n_null=200, correction="bh"
     )
@@ -301,7 +305,9 @@ def test_evaluate_calibrated_bh_infeasible_raises_naming_required_n():
     )
     assert len(proposals) == 8
     with pytest.raises(ValueError, match="159"):
-        evaluate_calibrated(cache, NEGATION_RICH_FIXTURE, NEGATION_RICH_FIXTURE, proposals, seed=0, n_null=50, correction="bh")
+        evaluate_calibrated(
+            cache, NEGATION_RICH_FIXTURE, NEGATION_RICH_FIXTURE, proposals, seed=0, n_null=50, correction="bh"
+        )
 
 
 def test_evaluate_calibrated_generators_must_include_synonym():
@@ -396,9 +402,13 @@ def test_profile_model_name_mismatch_raises_at_use_time():
 
 def test_profile_quantile_interpolation_exact_and_between_points():
     profile = CalibrationProfile(
-        model_name="m", n_samples=100,
+        model_name="m",
+        n_samples=100,
         null_delta_quantiles={"p05": 0.01, "p10": 0.02, "p25": 0.04, "p50": 0.08, "p75": 0.12, "p95": 0.20},
-        generator="synonym", seed=0, whymatched_version="0.0.0", created_at="now",
+        generator="synonym",
+        seed=0,
+        whymatched_version="0.0.0",
+        created_at="now",
     )
     assert _interp_profile_quantile(profile, 0.10) == pytest.approx(0.02)
     assert _interp_profile_quantile(profile, 0.175) == pytest.approx(0.03)
@@ -406,9 +416,13 @@ def test_profile_quantile_interpolation_exact_and_between_points():
 
 def test_profile_quantile_interpolation_flat_extrapolates_outside_range():
     profile = CalibrationProfile(
-        model_name="m", n_samples=100,
+        model_name="m",
+        n_samples=100,
         null_delta_quantiles={"p05": 0.01, "p10": 0.02, "p25": 0.04, "p50": 0.08, "p75": 0.12, "p95": 0.20},
-        generator="synonym", seed=0, whymatched_version="0.0.0", created_at="now",
+        generator="synonym",
+        seed=0,
+        whymatched_version="0.0.0",
+        created_at="now",
     )
     assert _interp_profile_quantile(profile, 0.01) == pytest.approx(0.01)
     assert _interp_profile_quantile(profile, 0.99) == pytest.approx(0.20)
@@ -435,3 +449,110 @@ def test_evaluate_calibrated_profile_driven_same_quantile_both_sides():
     for r in results:
         assert r.z_score is None
         assert r.p_value is None
+
+
+# --- fit_pair_profile (scale-consistent corpus-level null profile) -------
+#
+# Regression coverage for the bug documented in validation/REPORT.md:
+# fit_profile()'s self-similarity-drop statistic can land ~4 orders of
+# magnitude off evaluate_calibrated()'s live per-pair relative_delta scale
+# for a real contextual embedding model, silently making profile-driven
+# calibration unusable. fit_pair_profile() pools the exact live formula
+# instead -- these tests check the behavioral consequences of that (reaches
+# "ok" status where the live per-call path can't, produces a non-vanishing
+# quantile) rather than a magnitude comparison against fit_profile(), since
+# FakeBagOfWordsModel's plain bag-of-words hashing doesn't reproduce the
+# self-similarity-vs-cross-pair-delta gap a real contextual model shows.
+
+CORPUS_PAIRS = list(zip(CORPUS[:-1], CORPUS[1:]))
+
+# Short single-sentence pairs, deliberately mirroring NevIR's shape (a
+# handful of words, one negation cue difference) -- exactly the case that
+# fails to reach 20 SynonymNull candidates per-text live. Each sentence
+# includes one word from data/synonym_pairs.json ("help"/"begin"/"required"/
+# "obtain") so SynonymNull has anything to propose against at all.
+SHORT_NEGATION_PAIRS = [
+    ("can the team help now", "the team can help now"),
+    ("can the team not help now", "the team cannot help now"),
+    ("can the project begin today", "the project can begin today"),
+    ("can the project not begin today", "the project cannot begin today"),
+    ("is a permit required here", "a permit is required here"),
+    ("is a permit not required here", "a permit is not required here"),
+    ("can you obtain a refund", "you can obtain a refund"),
+    ("can you not obtain a refund", "you cannot obtain a refund"),
+]
+# A larger pool of similarly-short pairs for fitting a profile large enough
+# to clear min_null=20 once pooled (each pair alone can't).
+SHORT_PAIR_POOL = SHORT_NEGATION_PAIRS * 4
+
+
+def test_fit_pair_profile_basic_shape():
+    model = FakeBagOfWordsModel()
+    profile = fit_pair_profile(model, CORPUS_PAIRS, n_null=50, seed=0)
+    assert profile.model_name == model.name
+    assert profile.generator == "synonym"
+    assert profile.n_samples > 0
+    assert set(profile.null_delta_quantiles.keys()) == {"p05", "p10", "p25", "p50", "p75", "p95"}
+
+
+def test_fit_pair_profile_deterministic_same_seed():
+    model = FakeBagOfWordsModel()
+    p1 = fit_pair_profile(model, CORPUS_PAIRS, n_null=50, seed=0)
+    p2 = fit_pair_profile(model, CORPUS_PAIRS, n_null=50, seed=0)
+    assert p1.n_samples == p2.n_samples
+    assert p1.null_delta_quantiles == p2.null_delta_quantiles
+
+
+def test_fit_pair_profile_quantile_not_vanishingly_small():
+    # The bug this function fixes: fit_profile()'s self-similarity-drop
+    # statistic measured ~4.37e-5 at p10 against real NevIR data, four
+    # orders of magnitude below the live relative_delta scale (~0.03-0.3).
+    # fit_pair_profile pools the live formula directly, so its quantiles
+    # should land on that same non-vanishing scale, not near-zero.
+    model = FakeBagOfWordsModel()
+    profile = fit_pair_profile(model, CORPUS_PAIRS, n_null=50, seed=0)
+    assert profile.null_delta_quantiles["p50"] > 1e-3
+
+
+def test_fit_pair_profile_reaches_ok_status_on_short_pairs_that_fail_live():
+    model = FakeBagOfWordsModel()
+    cache = EmbeddingCache(model)
+    query, chunk = SHORT_NEGATION_PAIRS[0]
+    perturbations = get_perturbations(kinds=["negation"])
+    proposals = propose_all(query, chunk, perturbations, max_per_side_per_kind=6, rng=random.Random(0))
+
+    # Live, no profile: this single short pair can't produce 20 SynonymNull
+    # candidates on its own.
+    _, live_calibration = evaluate_calibrated(cache, query, chunk, proposals, n_null=50, quantile=0.10, seed=0)
+    assert all(nc.calibration_status == "insufficient_nulls" for nc in live_calibration.values())
+
+    # Profile fit on a larger pool of similarly-short pairs: pooled
+    # candidates clear the floor, so the same call now calibrates.
+    profile = fit_pair_profile(model, SHORT_PAIR_POOL, n_null=50, seed=0)
+    assert profile.n_samples >= _min_null(0.05)
+    _, profile_calibration = evaluate_calibrated(
+        cache, query, chunk, proposals, n_null=50, quantile=0.10, seed=0, profile=profile
+    )
+    assert all(nc.calibration_status == "ok" for nc in profile_calibration.values())
+
+
+def test_fit_pair_profile_with_both_fake_models():
+    # CONTRIBUTING.md's Definition of Done: anything touching
+    # calibration.py needs a test using both NegationBlindModel and
+    # NegationAwareModel -- a test proving you can detect collapse says
+    # nothing about your false-positive rate.
+    query, chunk = SHORT_NEGATION_PAIRS[1]  # the negation-cue-bearing direction
+    perturbations = get_perturbations(kinds=["negation"])
+    proposals = propose_all(query, chunk, perturbations, max_per_side_per_kind=6, rng=random.Random(0))
+
+    for model in (NegationBlindModel(), NegationAwareModel()):
+        cache = EmbeddingCache(model)
+        profile = fit_pair_profile(model, SHORT_PAIR_POOL, n_null=50, seed=0)
+        results, calibration = evaluate_calibrated(
+            cache, query, chunk, proposals, n_null=50, quantile=0.10, seed=0, profile=profile
+        )
+        assert all(nc.calibration_status == "ok" for nc in calibration.values())
+        # Just needs to run cleanly and produce a real decision either way --
+        # the point is the profile-driven path doesn't crash or silently
+        # fall back for either fake, not a specific collapse verdict.
+        assert all(r.decision_rule == "quantile" for r in results)

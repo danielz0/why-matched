@@ -201,6 +201,9 @@ provider SDK call itself.
 
 ### Set up for local development
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full setup, branch naming,
+and PR checklist.
+
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[local]"
