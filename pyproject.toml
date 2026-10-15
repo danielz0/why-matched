@@ -40,6 +40,7 @@ cohere = ["cohere>=5.0"]
 voyage = ["voyageai>=0.2"]
 viz = ["umap-learn>=0.5"]
 entity = ["spacy>=3.7"]
+validation = ["datasets>=2.14"]
 all = [
     "torch>=2.0",
     "transformers>=4.35",
@@ -51,7 +52,7 @@ all = [
     "umap-learn>=0.5",
     "spacy>=3.7",
 ]
-dev = ["pytest>=7", "pytest-cov>=4", "coverage-badge>=1.1"]
+dev = ["pytest>=7", "pytest-cov>=4", "coverage-badge>=1.1", "ruff>=0.6"]
 
 [project.scripts]
 whymatched = "whymatched.cli:main"
@@ -60,6 +61,17 @@ whymatched = "whymatched.cli:main"
 markers = [
     "optional_deps: requires optional runtime dependencies (torch/spacy/etc.)",
 ]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 120
+target-version = "py39"
+
+[tool.ruff.lint]
+# Deliberately narrow on this first pass (pyflakes + pycodestyle + isort)
+# so `make lint` doesn't drown in pre-existing violations across ~34 test
+# files. Widen the rule set in a follow-up PR, not silently here.
+select = ["E", "F", "I"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

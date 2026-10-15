@@ -1,0 +1,9 @@
+# Single maintainer today — this file is scaffolding for a second reviewer
+# once one exists (see GOVERNANCE.md), not a claim that one already does.
+* @danielz0
+
+# Statistical correctness — a plausible-looking PR in either of these two
+# places can silently corrupt every downstream collapse-rate number without
+# any test failing. Route review here deliberately.
+/src/whymatched/calibration.py   @danielz0
+/src/whymatched/perturbations/   @danielz0

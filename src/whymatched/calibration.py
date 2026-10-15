@@ -13,6 +13,7 @@ second-pair-of-eyes curation review the spec asks for -- a bad entry
 inflates the null and hides true collapses, the most damaging failure mode
 for this tool's credibility. Treat it as a starting point, not a final list.
 """
+
 from __future__ import annotations
 
 import importlib.metadata
@@ -148,15 +149,21 @@ class OrthographicNull:
             if stripped.endswith("."):
                 out.append(
                     Candidate(
-                        kind="orthographic_null", span=Span(".", end - 1, end), replacement="",
-                        trigger="remove trailing period", meaning_preserving=True,
+                        kind="orthographic_null",
+                        span=Span(".", end - 1, end),
+                        replacement="",
+                        trigger="remove trailing period",
+                        meaning_preserving=True,
                     )
                 )
             else:
                 out.append(
                     Candidate(
-                        kind="orthographic_null", span=Span("", end, end), replacement=".",
-                        trigger="add trailing period", meaning_preserving=True,
+                        kind="orthographic_null",
+                        span=Span("", end, end),
+                        replacement=".",
+                        trigger="add trailing period",
+                        meaning_preserving=True,
                     )
                 )
 
@@ -165,8 +172,11 @@ class OrthographicNull:
             spelled = surface.rstrip("% ").rstrip() + " percent"
             out.append(
                 Candidate(
-                    kind="orthographic_null", span=Span(surface, m.start(), m.end()), replacement=spelled,
-                    trigger=f"{surface} -> {spelled}", meaning_preserving=True,
+                    kind="orthographic_null",
+                    span=Span(surface, m.start(), m.end()),
+                    replacement=spelled,
+                    trigger=f"{surface} -> {spelled}",
+                    meaning_preserving=True,
                 )
             )
 
@@ -208,8 +218,11 @@ class DeletionReference:
                 continue
             out.append(
                 Candidate(
-                    kind="deletion_reference", span=word, replacement="",
-                    trigger=f"delete: {word.text}", meaning_preserving=False,
+                    kind="deletion_reference",
+                    span=word,
+                    replacement="",
+                    trigger=f"delete: {word.text}",
+                    meaning_preserving=False,
                     rationale="reference: genuine content deletion, not a null",
                 )
             )
@@ -221,8 +234,12 @@ def _quantile(deltas: np.ndarray, q: float) -> float:
 
 
 def _bootstrap_quantile_ci(
-    deltas: np.ndarray, q: float, *, rng: np.random.Generator,
-    n_resamples: int = 1000, ci: float = 0.90,
+    deltas: np.ndarray,
+    q: float,
+    *,
+    rng: np.random.Generator,
+    n_resamples: int = 1000,
+    ci: float = 0.90,
 ) -> Tuple[float, float]:
     """Deterministic under a given numpy Generator. 1000 resamples, 90% CI
     by default."""
@@ -363,8 +380,7 @@ def evaluate_calibrated(
 
     if profile is not None and profile.model_name != cache.model_name:
         raise ValueError(
-            f"profile was fit for model_name={profile.model_name!r}, "
-            f"but this cache's model is {cache.model_name!r}"
+            f"profile was fit for model_name={profile.model_name!r}, but this cache's model is {cache.model_name!r}"
         )
 
     if not proposals:
@@ -407,9 +423,7 @@ def evaluate_calibrated(
             generator_deltas: Dict[str, List[float]] = {}
             n_null_effective: Dict[str, int] = {}
             for gen_name, cands in null_candidates[side].items():
-                deltas = [
-                    abs(base_score - _score_for(c.apply(text))) / max(abs(base_score), 1e-6) for c in cands
-                ]
+                deltas = [abs(base_score - _score_for(c.apply(text))) / max(abs(base_score), 1e-6) for c in cands]
                 generator_deltas[gen_name] = deltas
                 n_null_effective[gen_name] = len(deltas)
 
@@ -418,33 +432,53 @@ def evaluate_calibrated(
                 Q = _quantile(synonym_deltas, quantile)
                 CI = _bootstrap_quantile_ci(synonym_deltas, quantile, rng=np_rng)
                 calibration_by_side[side] = NullCalibration(
-                    side=side, calibration_status="ok", quantile=quantile,
-                    null_quantile=Q, null_quantile_ci=CI, n_null_requested=n_null,
-                    min_null=min_null_eff, generator_deltas=generator_deltas,
+                    side=side,
+                    calibration_status="ok",
+                    quantile=quantile,
+                    null_quantile=Q,
+                    null_quantile_ci=CI,
+                    n_null_requested=n_null,
+                    min_null=min_null_eff,
+                    generator_deltas=generator_deltas,
                     n_null_effective=n_null_effective,
                 )
                 synonym_deltas_by_side[side] = synonym_deltas
             else:
                 calibration_by_side[side] = NullCalibration(
-                    side=side, calibration_status="insufficient_nulls", quantile=quantile,
-                    null_quantile=None, null_quantile_ci=None, n_null_requested=n_null,
-                    min_null=min_null_eff, generator_deltas=generator_deltas,
+                    side=side,
+                    calibration_status="insufficient_nulls",
+                    quantile=quantile,
+                    null_quantile=None,
+                    null_quantile_ci=None,
+                    n_null_requested=n_null,
+                    min_null=min_null_eff,
+                    generator_deltas=generator_deltas,
                     n_null_effective=n_null_effective,
                 )
         else:
             if profile.n_samples >= min_null_eff:
                 Q = _interp_profile_quantile(profile, quantile)
                 calibration_by_side[side] = NullCalibration(
-                    side=side, calibration_status="ok", quantile=quantile,
-                    null_quantile=Q, null_quantile_ci=None, n_null_requested=n_null,
-                    min_null=min_null_eff, generator_deltas={},
+                    side=side,
+                    calibration_status="ok",
+                    quantile=quantile,
+                    null_quantile=Q,
+                    null_quantile_ci=None,
+                    n_null_requested=n_null,
+                    min_null=min_null_eff,
+                    generator_deltas={},
                     n_null_effective={"synonym": profile.n_samples},
                 )
             else:
                 calibration_by_side[side] = NullCalibration(
-                    side=side, calibration_status="insufficient_nulls", quantile=quantile,
-                    null_quantile=None, null_quantile_ci=None, n_null_requested=n_null,
-                    min_null=min_null_eff, generator_deltas={},
+                    side=side,
+                    calibration_status="insufficient_nulls",
+                    quantile=quantile,
+                    null_quantile=None,
+                    null_quantile_ci=None,
+                    n_null_requested=n_null,
+                    min_null=min_null_eff,
+                    generator_deltas={},
                     n_null_effective={"synonym": profile.n_samples},
                 )
 
@@ -460,10 +494,15 @@ def evaluate_calibrated(
         if side_calibration.calibration_status == "insufficient_nulls":
             results.append(
                 PerturbationResult(
-                    kind=cand.kind, side=side, trigger=cand.trigger,
-                    counterfactual_snippet=snippet, base_score=base_score,
-                    counterfactual_score=cf_score, relative_delta=relative_delta,
-                    decision_rule="threshold", calibration_status="insufficient_nulls",
+                    kind=cand.kind,
+                    side=side,
+                    trigger=cand.trigger,
+                    counterfactual_snippet=snippet,
+                    base_score=base_score,
+                    counterfactual_score=cf_score,
+                    relative_delta=relative_delta,
+                    decision_rule="threshold",
+                    calibration_status="insufficient_nulls",
                     is_collapse=relative_delta < threshold,
                 )
             )
@@ -483,12 +522,20 @@ def evaluate_calibrated(
 
         results.append(
             PerturbationResult(
-                kind=cand.kind, side=side, trigger=cand.trigger,
-                counterfactual_snippet=snippet, base_score=base_score,
-                counterfactual_score=cf_score, relative_delta=relative_delta,
-                null_quantile=Q, null_quantile_ci=side_calibration.null_quantile_ci,
-                ratio=ratio, z_score=z_score, p_value=p_value,
-                decision_rule="quantile", calibration_status="ok",
+                kind=cand.kind,
+                side=side,
+                trigger=cand.trigger,
+                counterfactual_snippet=snippet,
+                base_score=base_score,
+                counterfactual_score=cf_score,
+                relative_delta=relative_delta,
+                null_quantile=Q,
+                null_quantile_ci=side_calibration.null_quantile_ci,
+                ratio=ratio,
+                z_score=z_score,
+                p_value=p_value,
+                decision_rule="quantile",
+                calibration_status="ok",
                 is_collapse=relative_delta < Q,
             )
         )
@@ -605,6 +652,83 @@ def fit_profile(
             cf_norm = float(np.linalg.norm(cf))
             cos = float(np.dot(base, cf)) / (base_norm * cf_norm + 1e-12)
             deltas.append(1.0 - cos)
+
+    arr = np.array(deltas) if deltas else np.array([0.0])
+    quantiles = {k: _quantile(arr, q) for k, q in zip(_PROFILE_QUANTILE_KEYS, _PROFILE_QUANTILES)}
+    return CalibrationProfile(
+        model_name=getattr(model, "name", "unknown"),
+        n_samples=len(deltas),
+        null_delta_quantiles=quantiles,
+        generator=gen.name,
+        seed=seed,
+        whymatched_version=_current_version(),
+        created_at=datetime.now(timezone.utc).isoformat(),
+    )
+
+
+def fit_pair_profile(
+    model,
+    pairs: Sequence[Tuple[str, str]],
+    *,
+    generator: Optional[object] = None,
+    n_null: int = 50,
+    seed: int = 0,
+    cache: Optional[EmbeddingCache] = None,
+) -> CalibrationProfile:
+    """Corpus-level null calibration fit on the SAME live relative_delta
+    statistic evaluate_calibrated() computes per-call, unlike fit_profile()'s
+    self-similarity-drop approximation -- profiles from this function are
+    numerically consistent with live per-pair thresholds, because they're
+    the same computation, just pooled across many pairs instead of one.
+
+    For every (query, chunk) pair and each side, proposes up to n_null
+    `generator` candidates (default SynonymNull) against that side's text
+    and computes relative_delta = |base_score - score(cf_side, other_side)|
+    / |base_score| against the pair's *other, unperturbed* side -- identical
+    to evaluate_calibrated's own per-side null loop -- pooling every pair
+    and both sides into one distribution (CalibrationProfile already
+    documents itself as side-agnostic).
+
+    Use this over fit_profile() whenever real (query, chunk) pairs are
+    available (a retrieval eval set, a benchmark corpus); fit_profile()
+    remains for standalone texts with no pair structure.
+
+    Fit this on a corpus DISJOINT from whatever it will calibrate (e.g. a
+    validation split when gating against a test split) to avoid leaking the
+    evaluated pairs into their own null reference.
+    """
+    gen = generator or SynonymNull()
+    cache = cache or EmbeddingCache(model)
+    rng = random.Random(seed)
+
+    all_pairs = list(pairs)
+    to_prime: List[str] = []
+    per_pair_candidates: List[Tuple[str, str, Dict[str, List[Candidate]]]] = []
+    for query, chunk in all_pairs:
+        to_prime.extend([query, chunk])
+        side_candidates: Dict[str, List[Candidate]] = {}
+        for side, text in (("query", query), ("chunk", chunk)):
+            cands = gen.propose(text, n=n_null, rng=rng)
+            cands = [c for c in cands if c.apply(text).strip()]
+            side_candidates[side] = cands
+            to_prime.extend(c.apply(text) for c in cands)
+        per_pair_candidates.append((query, chunk, side_candidates))
+
+    cache.prime(to_prime)
+
+    deltas: List[float] = []
+    for query, chunk, side_candidates in per_pair_candidates:
+        base_score = cache.score(query, chunk)
+        for side, cands in side_candidates.items():
+            other_text = chunk if side == "query" else query
+
+            def _score_for(cf_text: str, side=side, other_text=other_text) -> float:
+                return cache.score(cf_text, other_text) if side == "query" else cache.score(other_text, cf_text)
+
+            for c in cands:
+                text = query if side == "query" else chunk
+                cf_score = _score_for(c.apply(text))
+                deltas.append(abs(base_score - cf_score) / max(abs(base_score), 1e-6))
 
     arr = np.array(deltas) if deltas else np.array([0.0])
     quantiles = {k: _quantile(arr, q) for k, q in zip(_PROFILE_QUANTILE_KEYS, _PROFILE_QUANTILES)}

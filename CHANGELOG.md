@@ -67,6 +67,36 @@
   chunk's orthographic/synonym/deletion triple) since `PerturbationResult`
   alone can't carry per-generator delta arrays -- needed by
   `render_batch_html()`'s worst-case detail view.
+- **Team enablement**: `Makefile` (`install`/`test`/`test-fast`/`lint`/
+  `bench`), `.pre-commit-config.yaml` (ruff + hygiene hooks, also enforced
+  in CI via a new `pre-commit` job), `CONTRIBUTING.md`, `CODEOWNERS`,
+  `GOVERNANCE.md`, `SECURITY.md` (ships with a contact placeholder pending
+  maintainer input). `pyproject.toml` gained a `ruff>=0.6` dev dependency
+  and a first-pass `[tool.ruff]` config (`select = ["E", "F", "I"]`).
+- **Validation harness** (`validation/`, repo root, not shipped in the
+  wheel): `LabelledPair` + `load_nevir()` (Hugging Face `orionweller/NevIR`,
+  MIT-licensed, downloaded at call time -- nothing vendored) plus
+  `evaluate_detector()`/`DetectorMetrics` measuring the collapse detector's
+  precision/recall/F1 against externally-labelled ground truth, per
+  category and per model. `load_capretrieval()` is a documented stub
+  (`NotImplementedError`) -- see `validation/README.md`'s "Known gaps" for
+  why. New `validation` extra (`datasets>=2.14`). First real 3-model gate
+  run recorded in `validation/REPORT.md`.
+- `whymatched.calibration.fit_pair_profile()`: a corpus-level
+  `CalibrationProfile` producer fit on the *live* `relative_delta` formula
+  `evaluate_calibrated()` computes per-call (pooled across real
+  `(query, chunk)` pairs), unlike `fit_profile()`'s self-similarity-drop
+  approximation. Fixes a real gap found validating against NevIR: short
+  single-sentence pairs can't produce the 20 per-text `SynonymNull`
+  candidates calibration requires, so `--calibrate` was silently falling
+  back to the uncalibrated `threshold` rule every time
+  (`calibration_status="insufficient_nulls"`, 0 of 190 sampled directions
+  reached `"ok"`). `fit_pair_profile()` fixes that coverage gap, but a
+  follow-up re-run showed it does *not* fix the underlying precision
+  problem (recall drops sharply instead) -- both findings are written up
+  in `validation/REPORT.md`. Exposed in `validation/runner.py` via
+  `--fit-profile-split {train,validation}` and threaded through
+  `validation.metrics.evaluate_detector(profile=...)`.
 
 ### Behavior changes (opt-in via `legacy_rules=False`; becomes the default
 in the next minor version)
