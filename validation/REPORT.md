@@ -57,6 +57,9 @@ guide asks for honest-but-thin from this dataset alone; see
 
 Raw result files (full config + confusion matrix, JSON): `validation/results/all-MiniLM-L6-v2.json`, `validation/results/all-mpnet-base-v2.json`, `validation/results/bge-large-en-v1.5.json`.
 
+## Base rate check
+On the 200-pair sample, the share of directions where the model ranks the wrong document higher is 0.775 (MiniLM), 0.795 (mpnet) and 0.8125 (BGE). A detector that flags every direction scores exactly those precisions. v0.3.0 flagged 392 of 400 directions in each of the three main runs, so its precision (0.776, 0.793, 0.814) matches the base rate: on NevIR it shows no lift. The "proceed (>=0.8)" verdict for BGE above reflects BGE's higher failure rate, not detector performance. The construct-mismatch discussion below explains why a single-pair sensitivity score may not predict a two-document ranking label.
+
 ## Diagnostic: is low precision caused by unrelated-kind crosstalk?
 
 **Hypothesis** (raised before this run, and confirmed as a real bug in this
